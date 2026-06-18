@@ -14,7 +14,7 @@ type ReviewRepositoryInterface interface {
 	CreateReview(reviewPayload *dtos.CreateReviewDTO) *utils.AppError
 	GetAllReviewsByHotelId(reviewPayload *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError)
 	GetReviewById(reviewPayload *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError)
-	UpdateReviewByIdParams(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError
+	UpdateReviewById(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError
 	DeleteReviewById(reviewPayload *dtos.DeleteReviewByIdDTO) *utils.AppError
 }
 
@@ -128,7 +128,7 @@ func (reviewRepository *ReviewRepository) GetReviewById(reviewPayload *dtos.GetR
 	return reviewModel, nil
 }
 
-func (reviewRepository *ReviewRepository) UpdateReviewByIdParams(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError {
+func (reviewRepository *ReviewRepository) UpdateReviewById(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError {
 	// prepare and execute the query
 	query := "UPDATE reviews SET rating = ?, review_text = ?, is_synced = ? WHERE id = ?"
 	result, queryExecErr := reviewRepository.db.Exec(query, reviewPayload.Rating, reviewPayload.ReviewText, reviewPayload.IsSynced, reviewId.ID)
