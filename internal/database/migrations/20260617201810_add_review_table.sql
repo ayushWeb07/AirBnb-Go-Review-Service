@@ -1,0 +1,15 @@
+-- +goose Up
+CREATE TABLE IF NOT EXISTS reviews (
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   booking_id INT NOT NULL,
+   hotel_id INT NOT NULL,
+   user_id INT NOT NULL,
+   rating INT NOT NULL,
+   review_text TEXT NOT NULL,
+   is_synced BOOL NOT NULL DEFAULT FALSE,
+   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS reviews;
