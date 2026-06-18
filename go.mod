@@ -1,6 +1,6 @@
 module github.com/ayushWeb07/AirBnb-Go-Review-Service
 
-go 1.25.8
+go 1.26.2
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
