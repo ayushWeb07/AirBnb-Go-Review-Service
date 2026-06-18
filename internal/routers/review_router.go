@@ -8,6 +8,7 @@ import (
 	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/controllers"
 	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/dtos"
 	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/middlewares"
+	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/utils"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -23,82 +24,58 @@ func (reviewRouter *ReviewRouter) Register(r *chi.Mux) {
 		r.With(middlewares.DecodeAndValidateRequestBody[dtos.CreateReviewDTO]).Post("/", reviewRouter.ReviewController.CreateReview)
 
 		r.With(middlewares.DecodeAndValidateParams[dtos.GetAllReviewsByHotelIdDTO](
-			func(req *http.Request) *dtos.GetAllReviewsByHotelIdDTO {
-				hotelId, _ := strconv.Atoi(chi.URLParam(req, "hotel_id"))
+			func(req *http.Request) (*dtos.GetAllReviewsByHotelIdDTO, *utils.AppError) {
+				hotelId, err := strconv.Atoi(chi.URLParam(req, "hotel_id"))
 
-				//if err != nil {
-				//	utils.WriteJsonResponse(http.StatusBadRequest, resWriter, map[string]any{
-				//		"success": false,
-				//		"message": "Invalid req params has been provided",
-				//		"error":   validateErr.Error(),
-				//	})
-				//
-				//	return
-				//}
+				if err != nil {
+					return nil, utils.InternalServerError("Hotel id must be provided in integer: " + err.Error())
+				}
 
 				return &dtos.GetAllReviewsByHotelIdDTO{
 					HotelID: hotelId,
-				}
+				}, nil
 			},
 		)).Get("/hotel/{hotel_id}", reviewRouter.ReviewController.GetAllReviewsByHotelId)
 
 		r.With(middlewares.DecodeAndValidateParams[dtos.GetReviewByIdDTO](
-			func(req *http.Request) *dtos.GetReviewByIdDTO {
-				reviewId, _ := strconv.Atoi(chi.URLParam(req, "id"))
+			func(req *http.Request) (*dtos.GetReviewByIdDTO, *utils.AppError) {
+				reviewId, err := strconv.Atoi(chi.URLParam(req, "id"))
 
-				//if err != nil {
-				//	utils.WriteJsonResponse(http.StatusBadRequest, resWriter, map[string]any{
-				//		"success": false,
-				//		"message": "Invalid req params has been provided",
-				//		"error":   validateErr.Error(),
-				//	})
-				//
-				//	return
-				//}
+				if err != nil {
+					return nil, utils.InternalServerError("Hotel id must be provided in integer: " + err.Error())
+				}
 
 				return &dtos.GetReviewByIdDTO{
 					ID: reviewId,
-				}
+				}, nil
 			},
 		)).Get("/{id}", reviewRouter.ReviewController.GetReviewById)
 
 		r.With(middlewares.DecodeAndValidateParams[dtos.UpdateReviewByIdParams](
-			func(req *http.Request) *dtos.UpdateReviewByIdParams {
-				reviewId, _ := strconv.Atoi(chi.URLParam(req, "id"))
+			func(req *http.Request) (*dtos.UpdateReviewByIdParams, *utils.AppError) {
+				reviewId, err := strconv.Atoi(chi.URLParam(req, "id"))
 
-				//if err != nil {
-				//	utils.WriteJsonResponse(http.StatusBadRequest, resWriter, map[string]any{
-				//		"success": false,
-				//		"message": "Invalid req params has been provided",
-				//		"error":   validateErr.Error(),
-				//	})
-				//
-				//	return
-				//}
+				if err != nil {
+					return nil, utils.InternalServerError("Hotel id must be provided in integer: " + err.Error())
+				}
 
 				return &dtos.UpdateReviewByIdParams{
 					ID: reviewId,
-				}
+				}, nil
 			},
 		)).With(middlewares.DecodeAndValidateRequestBody[dtos.UpdateReviewByIdDTO]).Put("/{id}", reviewRouter.ReviewController.UpdateReviewById)
 
 		r.With(middlewares.DecodeAndValidateParams[dtos.DeleteReviewByIdDTO](
-			func(req *http.Request) *dtos.DeleteReviewByIdDTO {
-				reviewId, _ := strconv.Atoi(chi.URLParam(req, "id"))
+			func(req *http.Request) (*dtos.DeleteReviewByIdDTO, *utils.AppError) {
+				reviewId, err := strconv.Atoi(chi.URLParam(req, "id"))
 
-				//if err != nil {
-				//	utils.WriteJsonResponse(http.StatusBadRequest, resWriter, map[string]any{
-				//		"success": false,
-				//		"message": "Invalid req params has been provided",
-				//		"error":   validateErr.Error(),
-				//	})
-				//
-				//	return
-				//}
+				if err != nil {
+					return nil, utils.InternalServerError("Hotel id must be provided in integer: " + err.Error())
+				}
 
 				return &dtos.DeleteReviewByIdDTO{
 					ID: reviewId,
-				}
+				}, nil
 			},
 		)).Delete("/{id}", reviewRouter.ReviewController.DeleteReviewById)
 	})

@@ -20,7 +20,7 @@ func DecodeAndValidateRequestBody[T any](next http.Handler) http.Handler {
 		if decodeErr != nil {
 			utils.WriteJsonResponse(http.StatusBadRequest, resWriter, map[string]any{
 				"success": false,
-				"message": "Failed to decode the json body",
+				"message": "Invalid json body has been provided",
 				"error":   decodeErr.Error(),
 			})
 
@@ -47,10 +47,20 @@ func DecodeAndValidateRequestBody[T any](next http.Handler) http.Handler {
 }
 
 // HTTP middleware to decode and validate request params
-func DecodeAndValidateParams[T any](extractor func(req *http.Request) *T) func(next http.Handler) http.Handler {
+func DecodeAndValidateParams[T any](extractor func(req *http.Request) (*T, *utils.AppError)) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(resWriter http.ResponseWriter, req *http.Request) {
-			payload := extractor(req)
+			payload, err := extractor(req)
+
+			if err != nil {
+				utils.WriteJsonResponse(err.StatusCode, resWriter, map[string]any{
+					"success": err.Success,
+					"message": "Invalid req params has been provided",
+					"error":   err.Error(),
+				})
+
+				return
+			}
 
 			// validate the request params
 			validate := validator.New(validator.WithRequiredStructEnabled())

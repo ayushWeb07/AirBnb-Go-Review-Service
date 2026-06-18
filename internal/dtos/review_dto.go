@@ -6,7 +6,7 @@ type CreateReviewDTO struct {
 	UserID     int    `db:"user_id" json:"user_id" validate:"required,gte=1"`
 	Rating     int    `db:"rating" json:"rating" validate:"required,gte=1,lte=5"`
 	ReviewText string `db:"review_text" json:"review_text" validate:"required,min=50,max=1000"`
-	IsSynced   bool   `db:"is_synced" json:"is_synced" validate:"required"`
+	IsSynced   bool   `db:"is_synced" json:"is_synced"`
 }
 
 type GetAllReviewsByHotelIdDTO struct {
@@ -28,5 +28,5 @@ type UpdateReviewByIdParams struct {
 type UpdateReviewByIdDTO struct {
 	Rating     int    `db:"rating" json:"rating" validate:"required,gte=1,lte=5"`
 	ReviewText string `db:"review_text" json:"review_text" validate:"required,min=50,max=1000"`
-	IsSynced   bool   `db:"is_synced" json:"is_synced" validate:"required"`
+	IsSynced   bool   `db:"is_synced" json:"is_synced"`
 }
