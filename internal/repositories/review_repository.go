@@ -12,10 +12,10 @@ import (
 
 type ReviewRepositoryInterface interface {
 	CreateReview(reviewPayload *dtos.CreateReviewDTO) *utils.AppError
-	GetAllReviewsByHotelId(reviewPayload *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError)
-	GetReviewById(reviewPayload *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError)
-	UpdateReviewById(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError
-	DeleteReviewById(reviewPayload *dtos.DeleteReviewByIdDTO) *utils.AppError
+	GetAllReviewsByHotelId(reviewParams *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError)
+	GetReviewById(reviewParams *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError)
+	UpdateReviewById(reviewParams *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError
+	DeleteReviewById(reviewParams *dtos.DeleteReviewByIdDTO) *utils.AppError
 }
 
 type ReviewRepository struct {
@@ -51,12 +51,12 @@ func (reviewRepository *ReviewRepository) CreateReview(reviewPayload *dtos.Creat
 	return nil
 }
 
-func (reviewRepository *ReviewRepository) GetAllReviewsByHotelId(reviewPayload *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError) {
+func (reviewRepository *ReviewRepository) GetAllReviewsByHotelId(reviewParams *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError) {
 	var reviewModels []*models.ReviewModel
 
 	// load the rows
 	query := "SELECT * FROM reviews WHERE hotel_id = ?"
-	rows, queryErr := reviewRepository.db.Query(query, reviewPayload.HotelID)
+	rows, queryErr := reviewRepository.db.Query(query, reviewParams.HotelID)
 
 	if queryErr != nil {
 		reviewRepository.logger.Error("Something went wrong while fetching all the reviews",
@@ -98,19 +98,19 @@ func (reviewRepository *ReviewRepository) GetAllReviewsByHotelId(reviewPayload *
 	return reviewModels, nil
 }
 
-func (reviewRepository *ReviewRepository) GetReviewById(reviewPayload *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError) {
+func (reviewRepository *ReviewRepository) GetReviewById(reviewParams *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError) {
 	// create the dummy instance
 	reviewModel := &models.ReviewModel{}
 
 	// fetch from the db
 	query := "SELECT * FROM reviews WHERE id = ?"
 
-	queryErr := reviewRepository.db.QueryRow(query, reviewPayload.ID).Scan(&reviewModel.ID, &reviewModel.BookingID, &reviewModel.HotelID, &reviewModel.UserID, &reviewModel.Rating, &reviewModel.ReviewText, &reviewModel.IsSynced, &reviewModel.CreatedAt, &reviewModel.UpdatedAt)
+	queryErr := reviewRepository.db.QueryRow(query, reviewParams.ID).Scan(&reviewModel.ID, &reviewModel.BookingID, &reviewModel.HotelID, &reviewModel.UserID, &reviewModel.Rating, &reviewModel.ReviewText, &reviewModel.IsSynced, &reviewModel.CreatedAt, &reviewModel.UpdatedAt)
 
 	if queryErr != nil {
 		if queryErr == sql.ErrNoRows {
 			reviewRepository.logger.Error("Such review not found",
-				zap.Int("review_id", reviewPayload.ID))
+				zap.Int("review_id", reviewParams.ID))
 
 			return nil, utils.NotFound("Review with such id not found")
 		}
@@ -128,10 +128,10 @@ func (reviewRepository *ReviewRepository) GetReviewById(reviewPayload *dtos.GetR
 	return reviewModel, nil
 }
 
-func (reviewRepository *ReviewRepository) UpdateReviewById(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError {
+func (reviewRepository *ReviewRepository) UpdateReviewById(reviewParams *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError {
 	// prepare and execute the query
 	query := "UPDATE reviews SET rating = ?, review_text = ?, is_synced = ? WHERE id = ?"
-	result, queryExecErr := reviewRepository.db.Exec(query, reviewPayload.Rating, reviewPayload.ReviewText, reviewPayload.IsSynced, reviewId.ID)
+	result, queryExecErr := reviewRepository.db.Exec(query, reviewPayload.Rating, reviewPayload.ReviewText, reviewPayload.IsSynced, reviewParams.ID)
 
 	if queryExecErr != nil {
 		reviewRepository.logger.Error("Failed to update review from the database",
@@ -152,21 +152,21 @@ func (reviewRepository *ReviewRepository) UpdateReviewById(reviewId *dtos.Update
 
 	if rowsAffected == 0 {
 		reviewRepository.logger.Error("No review has been updated from the database",
-			zap.Int("review_id", reviewId.ID))
+			zap.Int("review_id", reviewParams.ID))
 
 		return utils.NotFound("Review with such id not found")
 	}
 
 	reviewRepository.logger.Info("Successfully updated the review from the database",
-		zap.Int("review_id", reviewId.ID))
+		zap.Int("review_id", reviewParams.ID))
 
 	return nil
 }
 
-func (reviewRepository *ReviewRepository) DeleteReviewById(reviewPayload *dtos.DeleteReviewByIdDTO) *utils.AppError {
+func (reviewRepository *ReviewRepository) DeleteReviewById(reviewParams *dtos.DeleteReviewByIdDTO) *utils.AppError {
 	// prepare and execute the query
 	query := "DELETE FROM reviews WHERE id = ?"
-	result, queryExecErr := reviewRepository.db.Exec(query, reviewPayload.ID)
+	result, queryExecErr := reviewRepository.db.Exec(query, reviewParams.ID)
 
 	if queryExecErr != nil {
 		reviewRepository.logger.Error("Failed to delete review from the database",
@@ -187,13 +187,13 @@ func (reviewRepository *ReviewRepository) DeleteReviewById(reviewPayload *dtos.D
 
 	if rowsAffected == 0 {
 		reviewRepository.logger.Error("No review has been deleted from the database",
-			zap.Int("review_id", reviewPayload.ID))
+			zap.Int("review_id", reviewParams.ID))
 
 		return utils.NotFound("Review with such id not found")
 	}
 
 	reviewRepository.logger.Info("Successfully deleted the review from the database",
-		zap.Int("review_id", reviewPayload.ID))
+		zap.Int("review_id", reviewParams.ID))
 
 	return nil
 }

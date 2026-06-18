@@ -11,10 +11,10 @@ import (
 
 type ReviewServiceInterface interface {
 	CreateReview(reviewPayload *dtos.CreateReviewDTO) *utils.AppError
-	GetAllReviewsByHotelId(reviewPayload *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError)
-	GetReviewById(reviewPayload *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError)
-	UpdateReviewById(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError
-	DeleteReviewById(reviewPayload *dtos.DeleteReviewByIdDTO) *utils.AppError
+	GetAllReviewsByHotelId(reviewParams *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError)
+	GetReviewById(reviewParams *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError)
+	UpdateReviewById(reviewParams *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError
+	DeleteReviewById(reviewParams *dtos.DeleteReviewByIdDTO) *utils.AppError
 }
 
 type ReviewService struct {
@@ -31,35 +31,35 @@ func (reviewService *ReviewService) CreateReview(reviewPayload *dtos.CreateRevie
 	return repositoryErr
 }
 
-func (reviewService *ReviewService) GetAllReviewsByHotelId(reviewPayload *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError) {
+func (reviewService *ReviewService) GetAllReviewsByHotelId(reviewParams *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError) {
 	reviewService.logger.Info("Get all reviews service called...")
 
 	// call the fetch all reviews repository
-	reviewModels, repositoryErr := reviewService.ReviewRepository.GetAllReviewsByHotelId(reviewPayload)
+	reviewModels, repositoryErr := reviewService.ReviewRepository.GetAllReviewsByHotelId(reviewParams)
 	return reviewModels, repositoryErr
 }
 
-func (reviewService *ReviewService) GetReviewById(reviewPayload *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError) {
+func (reviewService *ReviewService) GetReviewById(reviewParams *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError) {
 	reviewService.logger.Info("Get by id review service called...")
 
 	// call the fetch review by id repository
-	reviewModel, repositoryErr := reviewService.ReviewRepository.GetReviewById(reviewPayload)
+	reviewModel, repositoryErr := reviewService.ReviewRepository.GetReviewById(reviewParams)
 	return reviewModel, repositoryErr
 }
 
-func (reviewService *ReviewService) UpdateReviewById(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError {
+func (reviewService *ReviewService) UpdateReviewById(reviewParams *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError {
 	reviewService.logger.Info("Update by id review service called...")
 
 	// call the update review by id repository
-	repositoryErr := reviewService.ReviewRepository.UpdateReviewById(reviewId, reviewPayload)
+	repositoryErr := reviewService.ReviewRepository.UpdateReviewById(reviewParams, reviewPayload)
 	return repositoryErr
 }
 
-func (reviewService *ReviewService) DeleteReviewById(reviewPayload *dtos.DeleteReviewByIdDTO) *utils.AppError {
+func (reviewService *ReviewService) DeleteReviewById(reviewParams *dtos.DeleteReviewByIdDTO) *utils.AppError {
 	reviewService.logger.Info("Delete review service called...")
 
 	// call the delete review by id repository
-	repositoryErr := reviewService.ReviewRepository.DeleteReviewById(reviewPayload)
+	repositoryErr := reviewService.ReviewRepository.DeleteReviewById(reviewParams)
 	return repositoryErr
 }
 
