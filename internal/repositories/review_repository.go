@@ -4,196 +4,206 @@ import (
 	"database/sql"
 
 	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/config"
+	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/database/models"
+	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/dtos"
+	"github.com/ayushWeb07/AirBnb-Go-Review-Service/internal/utils"
 	"go.uber.org/zap"
 )
 
 type ReviewRepositoryInterface interface {
-	CreateReview(userPayload *dtos.CreateUser) *utils.AppError
-	GetAllUsers() ([]*models.UserModel, *utils.AppError)
-	GetUserById(userPayload *dtos.GetUserById) (*models.UserModel, *utils.AppError)
-	DeleteUserById(userPayload *dtos.DeleteUserById) *utils.AppError
-	GetUserByUsernameAndEmail(userPayload *dtos.GetUserByUsernameAndEmail) (*models.UserModel, *utils.AppError)
+	CreateReview(reviewPayload *dtos.CreateReviewDTO) *utils.AppError
+	GetAllReviewsByHotelId(reviewPayload *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError)
+	GetReviewById(reviewPayload *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError)
+	UpdateReviewByIdParams(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError
+	DeleteReviewById(reviewPayload *dtos.DeleteReviewByIdDTO) *utils.AppError
 }
 
-type UserRepository struct {
+type ReviewRepository struct {
 	db           *sql.DB
 	logger       *zap.Logger
 	serverConfig *config.ServerConfig
 }
 
-func (ur *UserRepository) CreateUser(userPayload *dtos.CreateUser) *utils.AppError {
+func (reviewRepository *ReviewRepository) CreateReview(reviewPayload *dtos.CreateReviewDTO) *utils.AppError {
 	// insert into the db
-	query := "INSERT INTO users (username, email, password) VALUES (?, ?, ?)"
-	result, queryExecErr := ur.db.Exec(query, userPayload.Username, userPayload.Email, userPayload.Password)
+	query := "INSERT INTO reviews (booking_id, hotel_id, user_id, rating, review_text, is_synced) VALUES (?, ?, ?, ?, ?, ?)"
+	result, queryExecErr := reviewRepository.db.Exec(query, reviewPayload.BookingID, reviewPayload.HotelID, reviewPayload.UserID, reviewPayload.Rating, reviewPayload.ReviewText, reviewPayload.IsSynced)
 
 	if queryExecErr != nil {
-		ur.logger.Error("Failed to insert user into the database",
+		reviewRepository.logger.Error("Failed to insert review into the database",
 			zap.String("error", queryExecErr.Error()))
 
-		return utils.InternalServerError("Failed to insert user into the database: " + queryExecErr.Error())
+		return utils.InternalServerError("Failed to insert review into the database: " + queryExecErr.Error())
 	}
 
 	id, insertErr := result.LastInsertId()
 
 	if insertErr != nil {
-		ur.logger.Error("Failed to insert user into the database",
+		reviewRepository.logger.Error("Failed to insert review into the database",
 			zap.String("error", insertErr.Error()))
 
-		return utils.InternalServerError("Failed to insert user into the database: " + insertErr.Error())
+		return utils.InternalServerError("Failed to insert review into the database: " + insertErr.Error())
 	}
 
-	ur.logger.Info("Successfully inserted user into the database",
-		zap.Int64("user_id", id))
+	reviewRepository.logger.Info("Successfully inserted review into the database",
+		zap.Int64("review_id", id))
 
 	return nil
 }
 
-func (ur *UserRepository) GetAllUsers() ([]*models.UserModel, *utils.AppError) {
-	// create the dummy instance
-	var userModels []*models.UserModel
+func (reviewRepository *ReviewRepository) GetAllReviewsByHotelId(reviewPayload *dtos.GetAllReviewsByHotelIdDTO) ([]*models.ReviewModel, *utils.AppError) {
+	var reviewModels []*models.ReviewModel
 
 	// load the rows
-	query := "SELECT id, username, email FROM users"
-	rows, queryErr := ur.db.Query(query)
+	query := "SELECT * FROM reviews WHERE hotel_id = ?"
+	rows, queryErr := reviewRepository.db.Query(query, reviewPayload.HotelID)
 
 	if queryErr != nil {
-		ur.logger.Error("Something went wrong while fetching all the users",
+		reviewRepository.logger.Error("Something went wrong while fetching all the reviews",
 			zap.String("error", queryErr.Error()))
 
-		return nil, utils.InternalServerError("Something went wrong while fetching all the users: " + queryErr.Error())
+		return nil, utils.InternalServerError("Something went wrong while fetching all the reviews: " + queryErr.Error())
 	}
 
 	defer rows.Close()
 
 	// loop through rows, using Scan to assign column data to struct fields.
 	for rows.Next() {
-		userModel := &models.UserModel{}
+		reviewModel := &models.ReviewModel{}
 
-		rowScanErr := rows.Scan(&userModel.ID, &userModel.Username, &userModel.Email)
+		rowScanErr := rows.Scan(&reviewModel.ID, &reviewModel.BookingID, &reviewModel.HotelID, &reviewModel.UserID, &reviewModel.Rating, &reviewModel.ReviewText, &reviewModel.IsSynced, &reviewModel.CreatedAt, &reviewModel.UpdatedAt)
 
 		if rowScanErr != nil {
-			ur.logger.Error("Failed to fetch all the users from the database",
+			reviewRepository.logger.Error("Failed to fetch all the reviews from the database",
 				zap.String("error", rowScanErr.Error()))
 
-			return nil, utils.InternalServerError("Something went wrong while fetching all the users: " + rowScanErr.Error())
+			return nil, utils.InternalServerError("Something went wrong while fetching all the reviews: " + rowScanErr.Error())
 		}
 
-		userModels = append(userModels, userModel)
+		reviewModels = append(reviewModels, reviewModel)
 	}
 
 	rowsErr := rows.Err()
 
 	if rowsErr != nil {
-		ur.logger.Error("Failed to fetch all the users from the database",
+		reviewRepository.logger.Error("Failed to fetch all the reviews from the database",
 			zap.String("error", rowsErr.Error()))
 
-		return nil, utils.InternalServerError("Something went wrong while fetching all the users: " + rowsErr.Error())
+		return nil, utils.InternalServerError("Something went wrong while fetching all the reviews: " + rowsErr.Error())
 	}
 
-	ur.logger.Info("Successfully fetched all the users from the database",
-		zap.Int("count", len(userModels)))
+	reviewRepository.logger.Info("Successfully fetched all the reviews from the database",
+		zap.Int("count", len(reviewModels)))
 
-	return userModels, nil
+	return reviewModels, nil
 }
 
-func (ur *UserRepository) GetUserById(userPayload *dtos.GetUserById) (*models.UserModel, *utils.AppError) {
+func (reviewRepository *ReviewRepository) GetReviewById(reviewPayload *dtos.GetReviewByIdDTO) (*models.ReviewModel, *utils.AppError) {
 	// create the dummy instance
-	userModel := &models.UserModel{}
+	reviewModel := &models.ReviewModel{}
 
 	// fetch from the db
-	query := "SELECT id, username, email, created_at, updated_at FROM users WHERE id = ?"
+	query := "SELECT * FROM reviews WHERE id = ?"
 
-	queryErr := ur.db.QueryRow(query, userPayload.ID).Scan(&userModel.ID, &userModel.Username, &userModel.Email, &userModel.CreatedAt, &userModel.UpdatedAt)
+	queryErr := reviewRepository.db.QueryRow(query, reviewPayload.ID).Scan(&reviewModel.ID, &reviewModel.BookingID, &reviewModel.HotelID, &reviewModel.UserID, &reviewModel.Rating, &reviewModel.ReviewText, &reviewModel.IsSynced, &reviewModel.CreatedAt, &reviewModel.UpdatedAt)
 
 	if queryErr != nil {
 		if queryErr == sql.ErrNoRows {
-			ur.logger.Error("Such user not found",
-				zap.String("id", userPayload.ID))
+			reviewRepository.logger.Error("Such review not found",
+				zap.Int("review_id", reviewPayload.ID))
 
-			return nil, utils.NotFound("User with such id not found")
+			return nil, utils.NotFound("Review with such id not found")
 		}
 
-		ur.logger.Error("Failed to fetch the user from the database",
+		reviewRepository.logger.Error("Failed to fetch the review from the database",
 			zap.String("error", queryErr.Error()))
 
-		return nil, utils.InternalServerError("Failed to fetch the user from the database: " + queryErr.Error())
+		return nil, utils.InternalServerError("Failed to fetch the review from the database: " + queryErr.Error())
 	}
 
-	ur.logger.Info("Successfully fetched the user from the database",
-		zap.String("user_id", userModel.ID),
-		zap.String("user_username", userModel.Username),
-		zap.String("user_email", userModel.Email),
+	reviewRepository.logger.Info("Successfully fetched the review from the database",
+		zap.Int("review_id", reviewModel.ID),
 	)
 
-	return userModel, nil
+	return reviewModel, nil
 }
 
-func (ur *UserRepository) GetUserByUsernameAndEmail(userPayload *dtos.GetUserByUsernameAndEmail) (*models.UserModel, *utils.AppError) {
-	existingUserModel := &models.UserModel{}
-
-	// fetch from the db
-	query := "SELECT id, username, email, password FROM users WHERE username = ? AND email = ?"
-
-	queryErr := ur.db.QueryRow(query, userPayload.Username, userPayload.Email).Scan(&existingUserModel.ID, &existingUserModel.Username, &existingUserModel.Email, &existingUserModel.Password)
-
-	if queryErr != nil {
-		if queryErr == sql.ErrNoRows {
-			ur.logger.Error("No such user found in the database",
-				zap.String("error", queryErr.Error()))
-
-			return nil, utils.NotFound("No such user found in the database")
-		}
-
-		ur.logger.Error("Failed to fetch the user from the database",
-			zap.String("error", queryErr.Error()))
-
-		return nil, utils.InternalServerError("Failed to fetch the user from the database: " + queryErr.Error())
-	}
-
-	return existingUserModel, nil
-}
-
-func (ur *UserRepository) DeleteUserById(userPayload *dtos.DeleteUserById) *utils.AppError {
+func (reviewRepository *ReviewRepository) UpdateReviewByIdParams(reviewId *dtos.UpdateReviewByIdParams, reviewPayload *dtos.UpdateReviewByIdDTO) *utils.AppError {
 	// prepare and execute the query
-	query := "DELETE FROM users WHERE id = ?"
-	result, queryExecErr := ur.db.Exec(query, userPayload.ID)
+	query := "UPDATE reviews SET rating = ?, review_text = ?, is_synced = ? WHERE id = ?"
+	result, queryExecErr := reviewRepository.db.Exec(query, reviewPayload.Rating, reviewPayload.ReviewText, reviewPayload.IsSynced, reviewId.ID)
 
 	if queryExecErr != nil {
-		ur.logger.Error("Failed to delete user from the database",
+		reviewRepository.logger.Error("Failed to update review from the database",
 			zap.String("error", queryExecErr.Error()))
 
-		return utils.InternalServerError("Failed to delete user from the database: " + queryExecErr.Error())
+		return utils.InternalServerError("Failed to update review from the database: " + queryExecErr.Error())
 	}
 
 	// check if any rows got affected
 	rowsAffected, rowsErr := result.RowsAffected()
 
 	if rowsErr != nil {
-		ur.logger.Error("Failed to delete user from the database",
+		reviewRepository.logger.Error("Failed to update review from the database",
 			zap.String("error", rowsErr.Error()))
 
-		return utils.InternalServerError("Failed to delete user from the database: " + rowsErr.Error())
+		return utils.InternalServerError("Failed to update review from the database: " + rowsErr.Error())
 	}
 
 	if rowsAffected == 0 {
-		ur.logger.Error("No user has been deleted from the database",
-			zap.String("id", userPayload.ID))
+		reviewRepository.logger.Error("No review has been updated from the database",
+			zap.Int("review_id", reviewId.ID))
 
-		return utils.NotFound("User with such id not found")
+		return utils.NotFound("Review with such id not found")
 	}
 
-	ur.logger.Info("Successfully deleted the user from the database",
-		zap.String("user_id", userPayload.ID))
+	reviewRepository.logger.Info("Successfully updated the review from the database",
+		zap.Int("review_id", reviewId.ID))
 
 	return nil
 }
 
-func NewUserRepository(logger *zap.Logger, db *sql.DB, serverConfig *config.ServerConfig) UserRepositoryInterface {
-	newUserRepository := &UserRepository{
+func (reviewRepository *ReviewRepository) DeleteReviewById(reviewPayload *dtos.DeleteReviewByIdDTO) *utils.AppError {
+	// prepare and execute the query
+	query := "DELETE FROM reviews WHERE id = ?"
+	result, queryExecErr := reviewRepository.db.Exec(query, reviewPayload.ID)
+
+	if queryExecErr != nil {
+		reviewRepository.logger.Error("Failed to delete review from the database",
+			zap.String("error", queryExecErr.Error()))
+
+		return utils.InternalServerError("Failed to delete review from the database: " + queryExecErr.Error())
+	}
+
+	// check if any rows got affected
+	rowsAffected, rowsErr := result.RowsAffected()
+
+	if rowsErr != nil {
+		reviewRepository.logger.Error("Failed to delete review from the database",
+			zap.String("error", rowsErr.Error()))
+
+		return utils.InternalServerError("Failed to delete review from the database: " + rowsErr.Error())
+	}
+
+	if rowsAffected == 0 {
+		reviewRepository.logger.Error("No review has been deleted from the database",
+			zap.Int("review_id", reviewPayload.ID))
+
+		return utils.NotFound("Review with such id not found")
+	}
+
+	reviewRepository.logger.Info("Successfully deleted the review from the database",
+		zap.Int("review_id", reviewPayload.ID))
+
+	return nil
+}
+
+func NewReviewRepository(logger *zap.Logger, db *sql.DB, serverConfig *config.ServerConfig) ReviewRepositoryInterface {
+	newReviewRepository := &ReviewRepository{
 		db:           db,
 		logger:       logger,
 		serverConfig: serverConfig,
 	}
 
-	return newUserRepository
+	return newReviewRepository
 }
