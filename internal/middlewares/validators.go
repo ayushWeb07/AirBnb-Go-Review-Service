@@ -47,7 +47,7 @@ func DecodeAndValidateRequestBody[T any](next http.Handler) http.Handler {
 }
 
 // HTTP middleware to decode and validate request params
-func DecodeAndValidateParams[T any](extractor func(req *http.Request) T) func(next http.Handler) http.Handler {
+func DecodeAndValidateParams[T any](extractor func(req *http.Request) *T) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(resWriter http.ResponseWriter, req *http.Request) {
 			payload := extractor(req)
