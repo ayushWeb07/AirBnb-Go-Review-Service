@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -38,6 +39,8 @@ func (reviewService *ReviewService) CreateReview(reviewPayload *dtos.CreateRevie
 		return utils.InternalServerError("Failed to make request to api gateway: " + err.Error())
 	}
 
+	resp.Body.Close()
+
 	if resp.StatusCode == http.StatusNotFound {
 
 		reviewService.logger.Error("Such user not found",
@@ -62,6 +65,8 @@ func (reviewService *ReviewService) CreateReview(reviewPayload *dtos.CreateRevie
 		reviewService.logger.Error("Failed to make request to hotel service: " + err.Error())
 		return utils.InternalServerError("Failed to make request to hotel service: " + err.Error())
 	}
+
+	resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 
@@ -88,6 +93,8 @@ func (reviewService *ReviewService) CreateReview(reviewPayload *dtos.CreateRevie
 		return utils.InternalServerError("Failed to make request to booking service: " + err.Error())
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode == http.StatusNotFound {
 
 		reviewService.logger.Error("Such booking not found",
@@ -102,6 +109,24 @@ func (reviewService *ReviewService) CreateReview(reviewPayload *dtos.CreateRevie
 
 		return utils.InternalServerError("Something went wrong while checking if the booking exists")
 
+	}
+
+	// check if the booking has confirmed status
+	var fetchBookingResp *dtos.FetchBookingDTO
+
+	if err := json.NewDecoder(resp.Body).Decode(&fetchBookingResp); err != nil {
+		reviewService.logger.Error("Something went wrong while checking the booking status",
+			zap.Int("booking_id", reviewPayload.BookingID))
+
+		return utils.InternalServerError("Something went wrong while checking the booking status")
+	}
+
+	if fetchBookingResp.Data.Status != "confirmed" {
+		reviewService.logger.Error("Your booking must be confirmed, in order to give a review",
+			zap.Int("booking_id", reviewPayload.BookingID),
+			zap.String("booking_status", fetchBookingResp.Data.Status))
+
+		return utils.Forbidden("Your booking must be confirmed, in order to give a review")
 	}
 
 	// call the create review repository
